@@ -69,14 +69,14 @@ static const float default_color_matrix1[] = {
  * Create a color matrix array from list.  If no list provided, use the
  * default ColorMatrix1.
  *
- * @param list  Python list containing color matrix
+ * @param array  2D numpy array containing color matrix
  * @param color_matrix1 Pointer to destination array for color matrix
  * @param len   Array size returned here
  * @returns 0 on success, negative on error, with exception set
  */
-static int handle_color_matrix1(PyObject *list, float **color_matrix1, int *len) {
+static int handle_color_matrix1(PyObject *array, float **color_matrix1, int *len) {
     /* No list provided, use default */
-    if (list == Py_None) {
+    if (array == Py_None) {
         *color_matrix1 = malloc(sizeof(default_color_matrix1));
         if (!*color_matrix1) {
             PyErr_SetString(PyExc_MemoryError, "Unable to allocate color matrix");
@@ -91,11 +91,41 @@ static int handle_color_matrix1(PyObject *list, float **color_matrix1, int *len)
         return 0;
     }
 
-    if (!PyList_Check(list)) {
+    PyArray_Descr *float_descr;
+    PyObject *float_array;
+    npy_intp *dims;
+    float **data;
+
+    if (!PyArray_Check(array)) {
+        PyErr_SetString(PyExc_TypeError, "ColorMatrix1 must be a 2D ndarray");
         return -1;
     }
 
-    *len = PyList_Size(list);
+    if (PyArray_NDIM(array) != 2) {
+        PyErr_SetString(PyExc_ValueError, "ColorMatrix1 must be a 2D ndarray");
+        return -1;
+    }
+
+    float_descr = PyArray_DescrFromType(NPY_FLOAT32);
+
+    float_array = PyArray_NewLikeArray((PyArrayObject*)array, NPY_CORDER,
+                                       float_descr, 0);
+    if (!float_array) {
+        return -1;
+    }
+
+    /* Convert to float32 by copying into new array */
+    if (PyArray_CopyInto((PyArrayObject*)float_array, (PyArrayObject*)array)) {
+        return -1;
+    }
+
+    dims = PyArray_DIMS(array);
+
+    if (PyArray_AsCArray(&float_array, &data, dims, 2, float_descr)) {
+        return -1;
+    }
+
+    *len = dims[0]*dims[1];
 
     *color_matrix1 = malloc(*len*sizeof(float));
     if (!*color_matrix1) {
@@ -103,19 +133,14 @@ static int handle_color_matrix1(PyObject *list, float **color_matrix1, int *len)
         return -1;
     }
 
-    for (int i = 0; i < *len; i++) {
-        PyObject *item = PyList_GetItem(list, i);
-        if (!item) {
-            free(*color_matrix1);
-            return -1;
-        }
-
-        (*color_matrix1)[i] = (float) PyFloat_AsDouble(item);
-        if (PyErr_Occurred()) {
-            free(*color_matrix1);
-            return -1;
+    for (int i = 0; i < dims[0]; i++) {
+        for (int j = 0; j < dims[1]; j++) {
+            (*color_matrix1)[i*dims[1] + j] = data[i][j];
         }
     }
+
+    PyArray_Free(float_array, data);
+    Py_DECREF(float_array);
 
     return 0;
 }
@@ -245,7 +270,7 @@ PyMethodDef tiffutilsMethods[] = {
         "    camera: Unique name of camera model\n"
         "    cfa_pattern: Bayer color filter array pattern.\n"
         "       One of tiffutils.CFA_*\n"
-        "    color_matrix1: A list containing the desired ColorMatrix1.\n"
+        "    color_matrix1: A 2D ndarray containing the desired ColorMatrix1.\n"
         "       If not specified, a default is used.\n\n"
         "Raises:\n"
         "    TypeError: image is not the appropriate format.\n"
