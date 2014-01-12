@@ -222,7 +222,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     file = TIFFOpen(filename, "w");
     if (file == NULL) {
         PyErr_SetString(PyExc_IOError, "libtiff failed to open file for writing.");
-        return NULL;
+        goto err;
     }
 
     TIFFSetField(file, TIFFTAG_IMAGEWIDTH, width);
@@ -247,7 +247,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
         if (TIFFWriteScanline(file, mem, row, 0) < 0) {
             TIFFClose(file);
             PyErr_SetString(PyExc_IOError, "libtiff failed to write row.");
-            return NULL;
+            goto err;
         }
         else {
             mem += width * bytes_per_pixel;
@@ -261,6 +261,10 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
 
     Py_INCREF(Py_None);
     return Py_None;
+
+err:
+    free(color_matrix1);
+    return NULL;
 }
 
 PyMethodDef tiffutilsMethods[] = {
