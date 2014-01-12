@@ -108,6 +108,7 @@ static int handle_color_matrix1(PyObject *array, float **color_matrix1, int *len
 
     float_descr = PyArray_DescrFromType(NPY_FLOAT32);
 
+    Py_INCREF(float_descr);
     float_array = PyArray_NewLikeArray((PyArrayObject*)array, NPY_CORDER,
                                        float_descr, 0);
     if (!float_array) {
