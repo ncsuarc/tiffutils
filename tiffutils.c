@@ -117,13 +117,13 @@ static int handle_color_matrix1(PyObject *array, float **color_matrix1, int *len
 
     /* Convert to float32 by copying into new array */
     if (PyArray_CopyInto((PyArrayObject*)float_array, (PyArrayObject*)array)) {
-        return -1;
+        goto err_decref_float_array;
     }
 
     dims = PyArray_DIMS(array);
 
     if (PyArray_AsCArray(&float_array, &data, dims, 2, float_descr)) {
-        return -1;
+        goto err_decref_float_array;
     }
 
     *len = dims[0]*dims[1];
@@ -131,7 +131,7 @@ static int handle_color_matrix1(PyObject *array, float **color_matrix1, int *len
     *color_matrix1 = malloc(*len*sizeof(float));
     if (!*color_matrix1) {
         PyErr_SetString(PyExc_MemoryError, "Unable to allocate color matrix");
-        return -1;
+        goto err_free_c_array;
     }
 
     for (int i = 0; i < dims[0]; i++) {
@@ -142,8 +142,13 @@ static int handle_color_matrix1(PyObject *array, float **color_matrix1, int *len
 
     PyArray_Free(float_array, data);
     Py_DECREF(float_array);
-
     return 0;
+
+err_free_c_array:
+    PyArray_Free(float_array, data);
+err_decref_float_array:
+    Py_DECREF(float_array);
+    return -1;
 }
 
 static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kwds) {
