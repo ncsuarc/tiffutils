@@ -267,6 +267,116 @@ err:
     return NULL;
 }
 
+static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kwds) {
+    static char *kwlist[] = {
+        "filename", NULL
+    };
+
+    char *filename;
+    TIFF *tiff = NULL;
+    uint32_t imagelength;
+    tsize_t scanlinesize;
+    uint16_t planarconfig, samplesperpixel, bitspersample;
+    int type;
+    npy_intp dims[2];
+    PyObject *array;
+    PyArray_Descr *descr;
+    void *data;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "s", kwlist, &filename)) {
+        return NULL;
+    }
+
+    /* Surpress warnings */
+    TIFFSetWarningHandler(NULL);
+
+    tiff = TIFFOpen(filename, "r");
+    if (!tiff) {
+        PyErr_SetString(PyExc_IOError, "Failed to open file");
+        return NULL;
+    }
+
+    scanlinesize = TIFFScanlineSize(tiff);
+
+    if (!TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &imagelength)) {
+        PyErr_SetString(PyExc_IOError, "Image length not found");
+        goto err;
+    }
+
+    if (!TIFFGetField(tiff, TIFFTAG_PLANARCONFIG, &planarconfig)) {
+        /* Contiguous is default */
+        planarconfig = PLANARCONFIG_CONTIG;
+    }
+
+    if (!TIFFGetField(tiff, TIFFTAG_SAMPLESPERPIXEL, &samplesperpixel)) {
+        /* 1 is default */
+        samplesperpixel = 1;
+    }
+
+    if (!TIFFGetField(tiff, TIFFTAG_BITSPERSAMPLE, &bitspersample)) {
+        /* 1 is default */
+        bitspersample = 1;
+    }
+
+    if (planarconfig != PLANARCONFIG_CONTIG) {
+        PyErr_SetString(PyExc_ValueError, "Only contiguous planar configuration supported");
+        goto err;
+    }
+
+    if (samplesperpixel != 1) {
+        PyErr_SetString(PyExc_ValueError, "Only 1 sample per pixel supported");
+        goto err;
+    }
+
+    switch (bitspersample) {
+    case 8:
+        type = NPY_UINT8;
+        break;
+    case 16:
+        type = NPY_UINT16;
+        break;
+    default:
+        PyErr_Format(PyExc_ValueError, "Unsupported bit depth %hu", bitspersample);
+        goto err;
+    }
+
+    descr = PyArray_DescrFromType(type);
+    if (!descr) {
+        goto err;
+    }
+
+    dims[0] = imagelength;
+    dims[1] = scanlinesize / (bitspersample/8);
+
+    Py_INCREF(descr);
+    array = PyArray_NewFromDescr(&PyArray_Type, descr, 2, dims,
+                                 NULL, NULL, 0, NULL);
+    if (!array) {
+        goto err;
+    }
+
+    data = PyArray_DATA(array);
+
+    for (int row = 0; row < imagelength; row++) {
+        if (TIFFReadScanline(tiff, data, row, 0) < 0) {
+            PyErr_SetString(PyExc_IOError, "libtiff failed to read row");
+            goto err_decref_array;
+        }
+
+        data += scanlinesize;
+    }
+
+    TIFFClose(tiff);
+
+    return array;
+
+err_decref_array:
+    Py_DECREF(array);
+err:
+    TIFFClose(tiff);
+    return NULL;
+}
+
 PyMethodDef tiffutilsMethods[] = {
     {"save_dng", (PyCFunction) tiffutils_save_dng, METH_VARARGS | METH_KEYWORDS,
         "save_dng(image, filename, [camera='Unknown', cfa_pattern=tiffutils.CFA_RGGB,\n"
@@ -285,6 +395,17 @@ PyMethodDef tiffutilsMethods[] = {
         "Raises:\n"
         "    TypeError: image is not the appropriate format.\n"
         "    IOError: file could not be written."
+    },
+    {"load_dng", (PyCFunction) tiffutils_load_dng, METH_VARARGS,
+        "load_dng(filename) -> image ndarray\n\n"
+        "Load DNG file as ndarray.\n"
+        "Expects a CFA image, with 1 sample per pixel and 8- or\n"
+        "16-bits per pixel.\n\n"
+        "Arguments:\n"
+        "   filename: Path to file to load\n\n"
+        "Raises:\n"
+        "   IOError: Unable to open or read file\n"
+        "   ValueError: Unsupported DNG format\n"
     },
     {NULL, NULL, 0, NULL}
 };
