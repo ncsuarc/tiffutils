@@ -180,12 +180,12 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     }
 
     if (!PyArray_Check(array)) {
-        PyErr_SetString(PyExc_TypeError, "nparray required");
+        PyErr_SetString(PyExc_TypeError, "ndarray required");
         return NULL;
     }
 
     if (!PyArray_ISCONTIGUOUS(array)) {
-        PyErr_SetString(PyExc_TypeError, "nparray must be contiguous");
+        PyErr_SetString(PyExc_TypeError, "ndarray must be contiguous");
         return NULL;
     }
 
@@ -195,7 +195,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     mem = PyArray_BYTES(array);
 
     if (ndims != 2) {
-        PyErr_SetString(PyExc_TypeError, "nparray must be 2 dimensional");
+        PyErr_SetString(PyExc_TypeError, "ndarray must be 2 dimensional");
         return NULL;
     }
 
@@ -210,7 +210,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
         bytes_per_pixel = 2;
         break;
     default:
-        PyErr_SetString(PyExc_TypeError, "nparray must be uint8 or uint16");
+        PyErr_SetString(PyExc_TypeError, "ndarray must be uint8 or uint16");
         return NULL;
     }
 
@@ -271,7 +271,7 @@ PyMethodDef tiffutilsMethods[] = {
     {"save_dng", (PyCFunction) tiffutils_save_dng, METH_VARARGS | METH_KEYWORDS,
         "save_dng(image, filename, [camera='Unknown', cfa_pattern=tiffutils.CFA_RGGB,\n"
         "   color_matrix1=None])\n\n"
-        "Save an nparray as a DNG.\n\n"
+        "Save an ndarray as a DNG.\n\n"
         "The image will be saved as a RAW DNG,a superset of TIFF.\n"
         "Arguments:\n"
         "    image: Image to save.  This should be a 2-dimensional, uint8 or\n"
