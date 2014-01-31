@@ -267,6 +267,52 @@ err:
     return NULL;
 }
 
+/*
+ * Detect CFA pattern of tiff
+ *
+ * @param tiff  Image to detect pattern of
+ * @returns PyObject of CFA type (one of the CFA constants),
+ *          or None, if unknown.  NULL if exception raised.
+ */
+static PyObject *tiff_cfa(TIFF *tiff) {
+    uint16_t *cfarepeatpatterndim[2];
+    uint8_t *cfapattern[4];
+    short x, y;
+
+    if (!TIFFGetField(tiff, TIFFTAG_CFAREPEATPATTERNDIM, &cfarepeatpatterndim)) {
+        goto none;
+    }
+
+    x = (*cfarepeatpatterndim)[0];
+    y = (*cfarepeatpatterndim)[1];
+
+    /* Only support 2x2 CFA patterns */
+    if (x != 2 || y != 2) {
+        goto none;
+    }
+
+    if (!TIFFGetField(tiff, TIFFTAG_CFAPATTERN, &cfapattern)) {
+        goto none;
+    }
+
+    /* Look for matching known pattern */
+    for (int i = 0; i < CFA_NUM_PATTERNS; i++) {
+        for (int j = 0; j < 4; j++) {
+            if ((*cfapattern)[j] != cfa_patterns[i][j]) {
+                break;
+            }
+            /* Found a match */
+            else if (j == 3) {
+                return PyLong_FromLong(i);
+            }
+        }
+    }
+
+none:
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
 static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kwds) {
     static char *kwlist[] = {
         "filename", NULL
@@ -277,6 +323,7 @@ static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kw
     uint32_t imagelength;
     tsize_t scanlinesize;
     uint16_t planarconfig, samplesperpixel, bitspersample;
+    PyObject *cfa = NULL;
     int type;
     npy_intp dims[2];
     PyObject *array;
@@ -328,6 +375,14 @@ static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kw
         goto err;
     }
 
+    /* Detect CFA pattern */
+    cfa = tiff_cfa(tiff);
+    if (!cfa) {
+        goto err;
+    }
+
+    /* Create array */
+
     switch (bitspersample) {
     case 8:
         type = NPY_UINT8;
@@ -337,12 +392,12 @@ static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kw
         break;
     default:
         PyErr_Format(PyExc_ValueError, "Unsupported bit depth %hu", bitspersample);
-        goto err;
+        goto err_decref_cfa;
     }
 
     descr = PyArray_DescrFromType(type);
     if (!descr) {
-        goto err;
+        goto err_decref_cfa;
     }
 
     dims[0] = imagelength;
@@ -352,7 +407,7 @@ static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kw
     array = PyArray_NewFromDescr(&PyArray_Type, descr, 2, dims,
                                  NULL, NULL, 0, NULL);
     if (!array) {
-        goto err;
+        goto err_decref_cfa;
     }
 
     data = PyArray_DATA(array);
@@ -368,10 +423,12 @@ static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kw
 
     TIFFClose(tiff);
 
-    return array;
+    return Py_BuildValue("(NN)", array, cfa);
 
 err_decref_array:
     Py_DECREF(array);
+err_decref_cfa:
+    Py_DECREF(cfa);
 err:
     TIFFClose(tiff);
     return NULL;
@@ -403,6 +460,10 @@ PyMethodDef tiffutilsMethods[] = {
         "16-bits per pixel.\n\n"
         "Arguments:\n"
         "   filename: Path to file to load\n\n"
+        "Returns:\n"
+        "   (image, cfa), where image is an ndarray containing the image\n"
+        "   data, and cfa is one of the tiffutils.CFA_* constants describing\n"
+        "   the CFA pattern of the image, or None, if unknown.\n\n"
         "Raises:\n"
         "   IOError: Unable to open or read file\n"
         "   ValueError: Unsupported DNG format\n"
