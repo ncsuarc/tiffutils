@@ -64,6 +64,77 @@ static const float default_color_matrix1[] = {
 };
 
 /*
+ * Create flat float array from PyArray
+ *
+ * Allocate and return a flatten float array from a 2D numpy array.
+ *
+ * @param array  2D numpy array to convert
+ * @param dest  Pointer to destination array
+ * @param len   Array size returned here
+ * @returns 0 on success, negative on error, with exception set
+ */
+static int PyArray_to_float_array(PyObject *array, float **dest, int *len) {
+    PyArray_Descr *float_descr;
+    PyObject *float_array;
+    npy_intp *dims;
+    float **data;
+
+    if (!PyArray_Check(array)) {
+        PyErr_SetString(PyExc_TypeError, "Array must be a 2D ndarray");
+        return -1;
+    }
+
+    if (PyArray_NDIM(array) != 2) {
+        PyErr_SetString(PyExc_ValueError, "Array must be a 2D ndarray");
+        return -1;
+    }
+
+    float_descr = PyArray_DescrFromType(NPY_FLOAT32);
+
+    Py_INCREF(float_descr);
+    float_array = PyArray_NewLikeArray((PyArrayObject*)array, NPY_CORDER,
+                                       float_descr, 0);
+    if (!float_array) {
+        return -1;
+    }
+
+    /* Convert to float32 by copying into new array */
+    if (PyArray_CopyInto((PyArrayObject*)float_array, (PyArrayObject*)array)) {
+        goto err_decref_float_array;
+    }
+
+    dims = PyArray_DIMS(array);
+
+    if (PyArray_AsCArray(&float_array, &data, dims, 2, float_descr)) {
+        goto err_decref_float_array;
+    }
+
+    *len = dims[0]*dims[1];
+
+    *dest = malloc(*len*sizeof(float));
+    if (!*dest) {
+        PyErr_SetString(PyExc_MemoryError, "Unable to allocate C array");
+        goto err_free_c_array;
+    }
+
+    for (int i = 0; i < dims[0]; i++) {
+        for (int j = 0; j < dims[1]; j++) {
+            (*dest)[i*dims[1] + j] = data[i][j];
+        }
+    }
+
+    PyArray_Free(float_array, data);
+    Py_DECREF(float_array);
+    return 0;
+
+err_free_c_array:
+    PyArray_Free(float_array, data);
+err_decref_float_array:
+    Py_DECREF(float_array);
+    return -1;
+}
+
+/*
  * Create ColorMatrix1 array
  *
  * Create a color matrix array from list.  If no list provided, use the
@@ -91,64 +162,8 @@ static int handle_color_matrix1(PyObject *array, float **color_matrix1, int *len
         return 0;
     }
 
-    PyArray_Descr *float_descr;
-    PyObject *float_array;
-    npy_intp *dims;
-    float **data;
-
-    if (!PyArray_Check(array)) {
-        PyErr_SetString(PyExc_TypeError, "ColorMatrix1 must be a 2D ndarray");
-        return -1;
-    }
-
-    if (PyArray_NDIM(array) != 2) {
-        PyErr_SetString(PyExc_ValueError, "ColorMatrix1 must be a 2D ndarray");
-        return -1;
-    }
-
-    float_descr = PyArray_DescrFromType(NPY_FLOAT32);
-
-    Py_INCREF(float_descr);
-    float_array = PyArray_NewLikeArray((PyArrayObject*)array, NPY_CORDER,
-                                       float_descr, 0);
-    if (!float_array) {
-        return -1;
-    }
-
-    /* Convert to float32 by copying into new array */
-    if (PyArray_CopyInto((PyArrayObject*)float_array, (PyArrayObject*)array)) {
-        goto err_decref_float_array;
-    }
-
-    dims = PyArray_DIMS(array);
-
-    if (PyArray_AsCArray(&float_array, &data, dims, 2, float_descr)) {
-        goto err_decref_float_array;
-    }
-
-    *len = dims[0]*dims[1];
-
-    *color_matrix1 = malloc(*len*sizeof(float));
-    if (!*color_matrix1) {
-        PyErr_SetString(PyExc_MemoryError, "Unable to allocate color matrix");
-        goto err_free_c_array;
-    }
-
-    for (int i = 0; i < dims[0]; i++) {
-        for (int j = 0; j < dims[1]; j++) {
-            (*color_matrix1)[i*dims[1] + j] = data[i][j];
-        }
-    }
-
-    PyArray_Free(float_array, data);
-    Py_DECREF(float_array);
-    return 0;
-
-err_free_c_array:
-    PyArray_Free(float_array, data);
-err_decref_float_array:
-    Py_DECREF(float_array);
-    return -1;
+    /* Convert provided array */
+    return PyArray_to_float_array(array, color_matrix1, len);
 }
 
 static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kwds) {
