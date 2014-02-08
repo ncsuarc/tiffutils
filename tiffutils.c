@@ -168,14 +168,19 @@ static int handle_color_matrix1(PyObject *array, float **color_matrix1, int *len
 
 static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kwds) {
     static char *kwlist[] = {
-        "image", "filename", "camera", "cfa_pattern", "color_matrix1", NULL
+        "image", "filename", "camera", "cfa_pattern", "color_matrix1",
+        "color_matrix2", "calibration_illuminant1", "calibration_illuminant2",
+        NULL
     };
 
     PyArrayObject *array;
-    PyObject *color_matrix1_list = Py_None;
+    PyObject *color_matrix1_ndarray = Py_None;
+    PyObject *color_matrix2_ndarray = Py_None;
+    unsigned short calibration_illuminant1 = 0;
+    unsigned short calibration_illuminant2 = 0;
     unsigned int pattern = CFA_RGGB;
-    float *color_matrix1;
-    int color_matrix1_len;
+    float *color_matrix1, *color_matrix2 = NULL;
+    int color_matrix1_len, color_matrix2_len;
     int ndims, width, height, type, bytes_per_pixel;
     npy_intp *dims;
     char *filename;
@@ -183,9 +188,12 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     char *mem;
     TIFF *file = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Os|sIO", kwlist, &array,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Os|sIOOHH", kwlist, &array,
                                      &filename, &camera, &pattern,
-                                     &color_matrix1_list)) {
+                                     &color_matrix1_ndarray,
+                                     &color_matrix2_ndarray,
+                                     &calibration_illuminant1,
+                                     &calibration_illuminant2)) {
         return NULL;
     }
 
@@ -229,9 +237,15 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
         return NULL;
     }
 
-    if (handle_color_matrix1(color_matrix1_list, &color_matrix1,
+    if (handle_color_matrix1(color_matrix1_ndarray, &color_matrix1,
                              &color_matrix1_len)) {
         return NULL;
+    }
+
+    if ((color_matrix2_ndarray != Py_None) &&
+        PyArray_to_float_array(color_matrix2_ndarray, &color_matrix2,
+                               &color_matrix2_len)) {
+        goto err;
     }
 
     file = TIFFOpen(filename, "w");
@@ -252,11 +266,24 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     TIFFSetField(file, TIFFTAG_SAMPLESPERPIXEL, 1);
     TIFFSetField(file, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
 
+    TIFFSetField(file, TIFFTAG_DNGVERSION, "\001\001\0\0");
+    TIFFSetField(file, TIFFTAG_DNGBACKWARDVERSION, "\001\0\0\0");
+
     TIFFSetField(file, TIFFTAG_CFAREPEATPATTERNDIM, (short[]){2,2});
     TIFFSetField(file, TIFFTAG_CFAPATTERN, cfa_patterns[pattern]);
     TIFFSetField(file, TIFFTAG_COLORMATRIX1, color_matrix1_len, color_matrix1);
-    TIFFSetField(file, TIFFTAG_DNGVERSION, "\001\001\0\0");
-    TIFFSetField(file, TIFFTAG_DNGBACKWARDVERSION, "\001\0\0\0");
+
+    if (color_matrix2) {
+        TIFFSetField(file, TIFFTAG_COLORMATRIX2, color_matrix2_len, color_matrix2);
+    }
+
+    if (calibration_illuminant1) {
+        TIFFSetField(file, TIFFTAG_CALIBRATIONILLUMINANT1, calibration_illuminant1);
+    }
+
+    if (calibration_illuminant2) {
+        TIFFSetField(file, TIFFTAG_CALIBRATIONILLUMINANT2, calibration_illuminant2);
+    }
 
     for (int row = 0; row < height; row++) {
         if (TIFFWriteScanline(file, mem, row, 0) < 0) {
@@ -272,12 +299,19 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     TIFFWriteDirectory(file);
     TIFFClose(file);
 
+    if (color_matrix2) {
+        free(color_matrix2);
+    }
+
     free(color_matrix1);
 
     Py_INCREF(Py_None);
     return Py_None;
 
 err:
+    if (color_matrix2) {
+        free(color_matrix2);
+    }
     free(color_matrix1);
     return NULL;
 }
@@ -463,7 +497,13 @@ PyMethodDef tiffutilsMethods[] = {
         "    cfa_pattern: Bayer color filter array pattern.\n"
         "       One of tiffutils.CFA_*\n"
         "    color_matrix1: A 2D ndarray containing the desired ColorMatrix1.\n"
-        "       If not specified, a default is used.\n\n"
+        "       If not specified, a default is used.\n"
+        "    color_matrix2: A 2D ndarray containing the desired ColorMatrix2.\n"
+        "       If not specified, the field is omitted.\n"
+        "    calibration_illuminant1: The desired CalibrationIlluminant1 value.\n"
+        "       If not specified or 0, the field is omitted.\n"
+        "    calibration_illuminant2: The desired CalibrationIlluminant2 value.\n"
+        "       If not specified or 0, the field is omitted.\n\n"
         "Raises:\n"
         "    TypeError: image is not the appropriate format.\n"
         "    IOError: file could not be written."
