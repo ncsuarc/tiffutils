@@ -193,7 +193,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     static char *kwlist[] = {
         "image", "filename", "camera", "cfa_pattern", "color_matrix1",
         "color_matrix2", "calibration_illuminant1", "calibration_illuminant2",
-        NULL
+        "compression", NULL
     };
 
     PyArrayObject *array;
@@ -203,6 +203,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     unsigned short calibration_illuminant2 = 0;
     unsigned int pattern = CFA_RGGB;
     float *color_matrix1, *color_matrix2 = NULL;
+    unsigned int compression = 0;
     int color_matrix1_len, color_matrix2_len;
     int ndims, width, height, type, bytes_per_pixel;
     npy_intp *dims;
@@ -211,12 +212,13 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     char *mem;
     TIFF *file = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Os|sIOOHH", kwlist, &array,
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "Os|sIOOHHI", kwlist, &array,
                                      &filename, &camera, &pattern,
                                      &color_matrix1_ndarray,
                                      &color_matrix2_ndarray,
                                      &calibration_illuminant1,
-                                     &calibration_illuminant2)) {
+                                     &calibration_illuminant2,
+                                     &compression)) {
         return NULL;
     }
 
@@ -289,8 +291,17 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     TIFFSetField(file, TIFFTAG_SAMPLESPERPIXEL, 1);
     TIFFSetField(file, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_CFA);
 
-    TIFFSetField(file, TIFFTAG_DNGVERSION, "\001\001\0\0");
-    TIFFSetField(file, TIFFTAG_DNGBACKWARDVERSION, "\001\0\0\0");
+    /* Deflate compression requires DNG 1.4 */
+    if (compression) {
+        TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_ADOBE_DEFLATE);
+        TIFFSetField(file, TIFFTAG_DNGVERSION, "\001\004\0\0");
+        TIFFSetField(file, TIFFTAG_DNGBACKWARDVERSION, "\001\004\0\0");
+    }
+    else {
+        TIFFSetField(file, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+        TIFFSetField(file, TIFFTAG_DNGVERSION, "\001\001\0\0");
+        TIFFSetField(file, TIFFTAG_DNGBACKWARDVERSION, "\001\0\0\0");
+    }
 
     TIFFSetField(file, TIFFTAG_CFAREPEATPATTERNDIM, (short[]){2,2});
     TIFFSetField(file, TIFFTAG_CFAPATTERN, cfa_patterns[pattern]);
@@ -517,6 +528,7 @@ PyMethodDef tiffutilsMethods[] = {
         "        uint16 Numpy array.\n"
         "    filename: Destination file to save DNG to.\n"
         "    camera: Unique name of camera model\n"
+        "    compression=False: enable DEFLATE compression (DNG 1.4)\n"
         "    cfa_pattern: Bayer color filter array pattern.\n"
         "       One of tiffutils.CFA_*\n"
         "    color_matrix1: A 2D ndarray containing the desired ColorMatrix1.\n"
