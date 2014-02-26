@@ -233,7 +233,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     }
 
     if (!PyArray_ISCONTIGUOUS(array)) {
-        PyErr_SetString(PyExc_TypeError, "ndarray must be contiguous");
+        PyErr_SetString(PyExc_ValueError, "ndarray must be contiguous");
         return NULL;
     }
 
@@ -243,7 +243,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
     mem = PyArray_BYTES(array);
 
     if (ndims != 2) {
-        PyErr_SetString(PyExc_TypeError, "ndarray must be 2 dimensional");
+        PyErr_SetString(PyExc_ValueError, "ndarray must be 2 dimensional");
         return NULL;
     }
 
@@ -258,7 +258,7 @@ static PyObject *tiffutils_save_dng(PyObject *self, PyObject *args, PyObject *kw
         bytes_per_pixel = 2;
         break;
     default:
-        PyErr_SetString(PyExc_TypeError, "ndarray must be uint8 or uint16");
+        PyErr_SetString(PyExc_ValueError, "ndarray must be uint8 or uint16");
         return NULL;
     }
 
@@ -543,9 +543,9 @@ PyMethodDef tiffutilsMethods[] = {
         "    calibration_illuminant2: The desired CalibrationIlluminant2 value.\n"
         "       If not specified or 0, the field is omitted.\n\n"
         "Raises:\n"
-        "    TypeError: image is not the appropriate format.\n"
-        "    ValueError: color_matrix* is not the appropriate dtype.\n"
-        "    IOError: file could not be written."
+        "    TypeError: image, color_matrix1, or color_matrix2 not ndarray\n"
+        "    ValueError: ndarray incorrect layout, dimensions, or dtype\n"
+        "    IOError: file could not be written"
     },
     {"load_dng", (PyCFunction) tiffutils_load_dng, METH_VARARGS,
         "load_dng(filename) -> image ndarray\n\n"

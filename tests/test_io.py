@@ -97,7 +97,7 @@ class TestSaveDNG(unittest.TestCase):
     def test_data_noncontiguous(self):
         data = np.zeros((10, 10))
         view = data[:,1]
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValueError):
             tiffutils.save_dng(view, self.name)
 
     def test_cfa(self):
