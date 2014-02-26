@@ -523,7 +523,8 @@ PyMethodDef tiffutilsMethods[] = {
         "   cfa_pattern=tiffutils.CFA_RGGB, color_matrix1=None,\n"
         "   color_matrix2=None, calibration_illuminant1=0,\n"
         "   calibration_illuminant2=0])\n\n"
-        "Save an ndarray as a DNG.\n\n"
+        "Save an ndarray as a DNG.  The ndarray must be contiguous.\n"
+        "Use np.ascontiguousarray() to force an array to be contiguous.\n\n"
         "The image will be saved as a RAW DNG, a superset of TIFF.\n\n"
         "Arguments:\n"
         "    image: Image to save.  This should be a 2-dimensional, uint8 or\n"
@@ -543,6 +544,7 @@ PyMethodDef tiffutilsMethods[] = {
         "       If not specified or 0, the field is omitted.\n\n"
         "Raises:\n"
         "    TypeError: image is not the appropriate format.\n"
+        "    ValueError: color_matrix* is not the appropriate dtype.\n"
         "    IOError: file could not be written."
     },
     {"load_dng", (PyCFunction) tiffutils_load_dng, METH_VARARGS,
