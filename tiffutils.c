@@ -519,16 +519,18 @@ err:
 
 PyMethodDef tiffutilsMethods[] = {
     {"save_dng", (PyCFunction) tiffutils_save_dng, METH_VARARGS | METH_KEYWORDS,
-        "save_dng(image, filename, [camera='Unknown', cfa_pattern=tiffutils.CFA_RGGB,\n"
-        "   color_matrix1=None])\n\n"
+        "save_dng(image, filename, [compression=False, camera='Unknown',\n"
+        "   cfa_pattern=tiffutils.CFA_RGGB, color_matrix1=None,\n"
+        "   color_matrix2=None, calibration_illuminant1=0,\n"
+        "   calibration_illuminant2=0])\n\n"
         "Save an ndarray as a DNG.\n\n"
-        "The image will be saved as a RAW DNG,a superset of TIFF.\n"
+        "The image will be saved as a RAW DNG, a superset of TIFF.\n\n"
         "Arguments:\n"
         "    image: Image to save.  This should be a 2-dimensional, uint8 or\n"
         "        uint16 Numpy array.\n"
         "    filename: Destination file to save DNG to.\n"
+        "    compression: enable DEFLATE compression (DNG 1.4)\n"
         "    camera: Unique name of camera model\n"
-        "    compression=False: enable DEFLATE compression (DNG 1.4)\n"
         "    cfa_pattern: Bayer color filter array pattern.\n"
         "       One of tiffutils.CFA_*\n"
         "    color_matrix1: A 2D ndarray containing the desired ColorMatrix1.\n"
