@@ -49,6 +49,7 @@ be necessary.
 ## Tests
 
 The `test/` directory contains module unit tests, which can be run with nose.
+These tests are additionally dependent on GExiv2, for verifying image metadata.
 
     $ pip install nose
     $ nosetests
