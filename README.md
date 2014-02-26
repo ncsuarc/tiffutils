@@ -45,3 +45,10 @@ Or, for Python 3:
 
 Of course, if the installation location requires root permissions, `sudo` may
 be necessary.
+
+## Tests
+
+The `test/` directory contains module unit tests, which can be run with nose.
+
+    $ pip install nose
+    $ nosetests
