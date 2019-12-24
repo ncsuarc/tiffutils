@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2013, North Carolina State University Aerial Robotics Club
+# Copyright (c) 2019, North Carolina State University Aerial Robotics Club
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #     * Redistributions of source code must retain the above copyright
@@ -13,7 +13,7 @@
 #     * Neither the name of the North Carolina State University Aerial Robotics Club
 #       nor the names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 # ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 # WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -27,17 +27,23 @@
 
 from distutils.core import setup, Extension
 
-tiffutils = Extension("tiffutils",
-                     extra_compile_args = ['-std=gnu99', '-g3'],
-                     library_dirs = ['/usr/local/lib/'],
-                     libraries = ['tiff'],
-                     sources = [
-                            'tiffutils.c',
-                     ])
+import numpy as np
 
-setup(name = 'tiffutils',
-      version = '0.1',
-      description = 'Utilities for TIFF files',
-      author = 'NC State Aerial Robotics Club',
-      license = 'BSD',
-      ext_modules = [tiffutils])
+tiffutils = Extension(
+    "tiffutils",
+    extra_compile_args=["-std=gnu99", "-g3"],
+    include_dirs=[np.get_include()],
+    library_dirs=["/usr/local/lib/"],
+    libraries=["tiff"],
+    sources=["tiffutils.c"],
+)
+
+setup(
+    name="tiffutils",
+    version="0.1.0",
+    description="Utilities for TIFF files",
+    author="NC State Aerial Robotics Club",
+    author_email="aerialrobotics@ncsu.edu",
+    license="BSD",
+    ext_modules=[tiffutils],
+)
