@@ -1,3 +1,15 @@
-*.swp
-*.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Build artifacts
+MANIFEST
 build/
+dist/
+tiffutils.egg-info/
+
+# mypy
+.mypy_cache/

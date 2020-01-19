@@ -1,43 +1,39 @@
-#!/usr/bin/env python
+from setuptools import Extension, setup
+from setuptools.command.build_ext import build_ext
 
-# Copyright (c) 2013, North Carolina State University Aerial Robotics Club
-# All rights reserved.
-# 
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in the
-#       documentation and/or other materials provided with the distribution.
-#     * Neither the name of the North Carolina State University Aerial Robotics Club
-#       nor the names of its contributors may be used to endorse or promote products
-#       derived from this software without specific prior written permission.
-# 
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR ANY
-# DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-# ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from distutils.core import setup, Extension
+class numpy_build_ext(build_ext):
+    """
+    Subclass of build_ext that dynamically imports numpy and adds
+    numpy.get_include() to the include_dirs.
+    """
 
-tiffutils = Extension("tiffutils",
-                     extra_compile_args = ['-std=gnu99', '-g3'],
-                     library_dirs = ['/usr/local/lib/'],
-                     libraries = ['tiff'],
-                     sources = [
-                            'tiffutils.c',
-                     ])
+    def finalize_options(self):
+        build_ext.finalize_options(self)
+        # Prevent numpy from thinking it is still in its setup process
+        __builtins__.__NUMPY_SETUP__ = False
+        import numpy
 
-setup(name = 'tiffutils',
-      version = '0.1',
-      description = 'Utilities for TIFF files',
-      author = 'NC State Aerial Robotics Club',
-      license = 'BSD',
-      ext_modules = [tiffutils])
+        self.include_dirs.append(numpy.get_include())
+
+
+setup(
+    name="tiffutils",
+    version="0.1.0",
+    description="Utilities for TIFF files",
+    author="NC State Aerial Robotics Club",
+    author_email="aerialrobotics@ncsu.edu",
+    license="BSD",
+    # Use our custom_build_ext that dynamically imports numpy and make sure
+    # that numpy is installed before we run it
+    cmdclass={"build_ext": numpy_build_ext},
+    setup_requires=["numpy"],
+    ext_modules=[
+        Extension(
+            "tiffutils",
+            extra_compile_args=["-std=gnu99", "-g3"],
+            libraries=["tiff"],
+            sources=["tiffutils.c"],
+        )
+    ],
+)
