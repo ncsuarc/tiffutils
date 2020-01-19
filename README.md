@@ -14,9 +14,7 @@ Bayer images to and from DNGs and Numpy ndarrays.
 * python-dev
     * This is a Python C API module, so the Python headers are required
     * Python 2 and Python 3 are supported
-    * Tested on Python 2.7 and Python 3.2
-* python-numpy-dev
-    * Tested on Numpy 1.6
+    * Tested on Python 3.6+
 * libtiff-dev > 4.0.3
     * libtiff with support for CFA (color filter array) tags is required
     * Support is merged into the libtiff trunk, and will be released with
