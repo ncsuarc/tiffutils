@@ -19,7 +19,7 @@ class numpy_build_ext(build_ext):
 
 setup(
     name="tiffutils",
-    version="1.0.0",
+    version="0.1.0",
     description="Utilities for TIFF files",
     author="NC State Aerial Robotics Club",
     author_email="aerialrobotics@ncsu.edu",
