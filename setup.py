@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # Copyright (c) 2019, North Carolina State University Aerial Robotics Club
 # All rights reserved.
 #
