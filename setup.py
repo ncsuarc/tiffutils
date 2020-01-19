@@ -1,11 +1,15 @@
 from setuptools import Extension, setup
-# We import as _build_ext so that we can subclass it with our own
-from setuptools.command.build_ext import build_ext as _build_ext
+from setuptools.command.build_ext import build_ext
 
 
-class build_ext(_build_ext):
+class numpy_build_ext(build_ext):
+    """
+    Subclass of build_ext that dynamically imports numpy and adds
+    numpy.get_include() to the include_dirs.
+    """
+
     def finalize_options(self):
-        _build_ext.finalize_options(self)
+        build_ext.finalize_options(self)
         # Prevent numpy from thinking it is still in its setup process
         __builtins__.__NUMPY_SETUP__ = False
         import numpy
@@ -20,8 +24,9 @@ setup(
     author="NC State Aerial Robotics Club",
     author_email="aerialrobotics@ncsu.edu",
     license="BSD",
-    # So that we can import numpy
-    cmdclass={"build_ext": build_ext},
+    # Use our custom_build_ext that dynamically imports numpy and make sure
+    # that numpy is installed before we run it
+    cmdclass={"build_ext": numpy_build_ext},
     setup_requires=["numpy"],
     ext_modules=[
         Extension(
