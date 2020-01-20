@@ -1,3 +1,5 @@
+import os.path
+
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
@@ -17,12 +19,18 @@ class numpy_build_ext(build_ext):
         self.include_dirs.append(numpy.get_include())
 
 
+with open(os.path.join(os.path.dirname(__file__), "README.md")) as f:
+    readme = f.read()
+
+
 setup(
     name="tiffutils",
     version="1.0.0",
     description="Utilities for TIFF files",
+    long_description=readme,
     author="NC State Aerial Robotics Club",
     author_email="aerialrobotics@ncsu.edu",
+    url="https://github.com/ncsuarc/tiffutils",
     license="BSD",
     # Use our custom_build_ext that dynamically imports numpy and make sure
     # that numpy is installed before we run it
