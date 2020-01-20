@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, North Carolina State University Aerial Robotics Club
+ * Copyright (c) 2013-2020, North Carolina State University Aerial Robotics Club
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
