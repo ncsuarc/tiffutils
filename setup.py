@@ -28,6 +28,7 @@ setup(
     version="1.0.1",
     description="Utilities for TIFF files",
     long_description=readme,
+    long_description_content_type='text/markdown',
     author="NC State Aerial Robotics Club",
     author_email="aerialrobotics@ncsu.edu",
     url="https://github.com/ncsuarc/tiffutils",
