@@ -468,7 +468,7 @@ static PyObject *tiffutils_load_dng(PyObject *self, PyObject *args, PyObject *kw
 
     data = PyArray_DATA(array);
 
-    for (int row = 0; row < imagelength; row++) {
+    for (size_t row = 0; row < imagelength; row++) {
         if (TIFFReadScanline(tiff, data, row, 0) < 0) {
             PyErr_SetString(PyExc_IOError, "libtiff failed to read row");
             goto err_decref_array;
