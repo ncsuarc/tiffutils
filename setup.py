@@ -25,7 +25,7 @@ with open(os.path.join(os.path.dirname(__file__), "README.md")) as f:
 
 setup(
     name="tiffutils",
-    version="1.0.1",
+    version="1.0.2",
     description="Utilities for TIFF files",
     long_description=readme,
     long_description_content_type='text/markdown',
