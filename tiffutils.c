@@ -520,7 +520,7 @@ PyMethodDef tiffutilsMethods[] = {
         "    ValueError: ndarray incorrect layout, dimensions, or dtype\n"
         "    IOError: file could not be written"
     },
-    {"load_dng", (PyCFunction) tiffutils_load_dng, METH_VARARGS,
+    {"load_dng", (PyCFunction) tiffutils_load_dng, METH_VARARGS | METH_KEYWORDS,
         "load_dng(filename) -> image ndarray\n\n"
         "Load DNG file as ndarray.\n"
         "Expects a CFA image, with 1 sample per pixel and 8- or\n"
