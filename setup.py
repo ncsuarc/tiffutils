@@ -33,6 +33,7 @@ setup(
     author_email="aerialrobotics@ncsu.edu",
     url="https://github.com/ncsuarc/tiffutils",
     license="BSD",
+    install_requires=["numpy"],
     # Use our custom_build_ext that dynamically imports numpy and make sure
     # that numpy is installed before we run it
     cmdclass={"build_ext": numpy_build_ext},
