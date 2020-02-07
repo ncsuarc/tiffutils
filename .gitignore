@@ -14,5 +14,8 @@ tiffutils.egg-info/
 # mypy
 .mypy_cache/
 
-# virtual environments
+# Virtual environments
 venv/
+
+# Test environments
+.tox/
