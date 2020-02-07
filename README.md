@@ -1,6 +1,8 @@
 tiffutils
 =========
 
+[![Build Status](https://travis-ci.com/ncsuarc/tiffutils.svg?branch=master)](https://travis-ci.com/ncsuarc/tiffutils)
+
 Various TIFF utility functions.
 
 This module provide various functionality for working with TIFF files that
@@ -46,8 +48,10 @@ be necessary.
 
 ## Tests
 
-The `test/` directory contains module unit tests, which can be run with nose.
-These tests are additionally dependent on GExiv2, for verifying image metadata.
+The `test/` directory contains module unit tests, which can be run using tox.
+For most users, the following commands should work. However, the tests do
+require the libraries Boost.Python and Exiv2 to be installed, so check for that
+if you run into issues.
 
-    $ pip install nose
-    $ nosetests
+    $ pip install tox
+    $ tox
