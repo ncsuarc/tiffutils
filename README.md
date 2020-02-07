@@ -1,6 +1,8 @@
 tiffutils
 =========
 
+[![Build Status](https://travis-ci.com/ncsuarc/tiffutils.svg?branch=master)](https://travis-ci.com/ncsuarc/tiffutils)
+
 Various TIFF utility functions.
 
 This module provide various functionality for working with TIFF files that
