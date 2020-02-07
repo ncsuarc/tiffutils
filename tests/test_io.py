@@ -2,7 +2,7 @@
 
 import tiffutils
 import fractions
-from gi.repository import GExiv2
+from pyexiv2.metadata import ImageMetadata
 import numpy as np
 import os
 import tempfile
@@ -40,7 +40,7 @@ def str_to_array(s, shape):
     Returns:
         np.array with matrix contents and shape
     """
-    data = np.array([float(fractions.Fraction(d)) for d in s.split()])
+    data = np.array([float(d) for d in s])
     return data.reshape(shape)
 
 class TestSaveDNG(unittest.TestCase):
@@ -90,8 +90,9 @@ class TestSaveDNG(unittest.TestCase):
         tiffutils.save_dng(self.reference, self.name,
                            color_matrix1=matrix)
 
-        meta = GExiv2.Metadata(self.name)
-        color_matrix1 = str_to_array(meta['Exif.Image.ColorMatrix1'],
+        meta = ImageMetadata(self.name)
+        meta.read()
+        color_matrix1 = str_to_array(meta['Exif.Image.ColorMatrix1'].value,
                                      matrix.shape)
 
         self.assertTrue((color_matrix1==matrix).all())
@@ -106,7 +107,8 @@ class TestSaveDNG(unittest.TestCase):
     def test_color_matrix2_omitted(self):
         tiffutils.save_dng(self.reference, self.name)
 
-        meta = GExiv2.Metadata(self.name)
+        meta = ImageMetadata(self.name)
+        meta.read()
         self.assertTrue('Exif.Image.ColorMatrix2' not in meta)
 
     def test_color_matrix2(self):
@@ -118,8 +120,9 @@ class TestSaveDNG(unittest.TestCase):
         tiffutils.save_dng(self.reference, self.name,
                            color_matrix2=matrix)
 
-        meta = GExiv2.Metadata(self.name)
-        color_matrix2 = str_to_array(meta['Exif.Image.ColorMatrix2'],
+        meta = ImageMetadata(self.name)
+        meta.read()
+        color_matrix2 = str_to_array(meta['Exif.Image.ColorMatrix2'].value,
                                      matrix.shape)
 
         self.assertTrue((color_matrix2==matrix).all())
@@ -134,27 +137,31 @@ class TestSaveDNG(unittest.TestCase):
     def test_calibration_illuminant1_omitted(self):
         tiffutils.save_dng(self.reference, self.name)
 
-        meta = GExiv2.Metadata(self.name)
+        meta = ImageMetadata(self.name)
+        meta.read()
         self.assertTrue('Exif.Image.CalibrationIlluminant1' not in meta)
 
     def test_calibration_illuminant1(self):
         tiffutils.save_dng(self.reference, self.name,
                            calibration_illuminant1=tiffutils.ILLUMINANT_D65)
 
-        meta = GExiv2.Metadata(self.name)
-        illuminant1 = float(meta['Exif.Image.CalibrationIlluminant1'])
+        meta = ImageMetadata(self.name)
+        meta.read()
+        illuminant1 = float(meta['Exif.Image.CalibrationIlluminant1'].value)
         self.assertEquals(illuminant1, tiffutils.ILLUMINANT_D65)
 
     def test_calibration_illumimant2_omitted(self):
         tiffutils.save_dng(self.reference, self.name)
 
-        meta = GExiv2.Metadata(self.name)
+        meta = ImageMetadata(self.name)
+        meta.read()
         self.assertTrue('Exif.Image.CalibrationIllumimant2' not in meta)
 
     def test_calibration_illuminant2(self):
         tiffutils.save_dng(self.reference, self.name,
                            calibration_illuminant2=tiffutils.ILLUMINANT_D65)
 
-        meta = GExiv2.Metadata(self.name)
-        illuminant2 = float(meta['Exif.Image.CalibrationIlluminant2'])
+        meta = ImageMetadata(self.name)
+        meta.read()
+        illuminant2 = float(meta['Exif.Image.CalibrationIlluminant2'].value)
         self.assertEquals(illuminant2, tiffutils.ILLUMINANT_D65)
