@@ -3,10 +3,13 @@ python:
   - 3.6
   - 3.7
   - 3.8
-  - pypy3
 before_install:
+  # Install C libraries
   - sudo apt-get update
-  - sudo apt-get install libexiv2-dev libboost-python-dev
+  - sudo apt-get install -y libexiv2-dev libboost-python-dev
+  # XXX: Fix libboost_python path for py3exiv2's sake. This is incredibly
+  # fragile and relies on Travis using Ubuntu 16.04 LTS.
+  - sudo ln -sv /usr/lib/x86_64-linux-gnu/libboost_python-py35.so /usr/lib/libboost_python3.so
 install:
   - pip install tox
 script:
