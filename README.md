@@ -11,6 +11,8 @@ is not available in other modules.
 Currently, the primary functionality is the ability to load and save RAW
 Bayer images to and from DNGs and Numpy ndarrays.
 
+**This library is no longer maintained, please explore other libraries**
+
 ## Requirements
 
 * python-dev
